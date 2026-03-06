@@ -17,7 +17,7 @@
     }
     .month-pill {
       background: #1a1a26;
-      color: #aaa;
+      color: #c0b8ae;
       border: none;
       border-radius: 20px;
       padding: 6px 14px;
@@ -187,14 +187,14 @@ function App() {
         }}>
           Calendrier Fiscal
         </h1>
-        <p style={{ color: "#666", fontSize: 15, marginBottom: 36, fontFamily: "'DM Sans', sans-serif", fontWeight: 300 }}>
+        <p style={{ color: "#958f86", fontSize: 15, marginBottom: 36, fontFamily: "'DM Sans', sans-serif", fontWeight: 300 }}>
           TVA régime simplifié (CA12) · IR classique · CFE · Dép. 34 — Zone 2
         </p>
 
         {/* Legend */}
         <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginBottom: 28 }}>
           {Object.entries(typeConfig).map(([key, cfg]) => (
-            <div key={key} style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#888" }}>
+            <div key={key} style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#a8a29a" }}>
               <div style={{ width: 10, height: 10, borderRadius: 2, background: cfg.color }} />
               {cfg.label}
             </div>
@@ -214,7 +214,7 @@ function App() {
                 key={i}
                 className={`month-pill${selectedMonth === i + 1 ? " active" : ""}`}
                 onClick={() => setSelectedMonth(selectedMonth === i + 1 ? null : i + 1)}
-                style={{ color: hasEvent ? "#e8e0d4" : "#444", fontWeight: hasEvent ? 500 : 300 }}
+                style={{ color: hasEvent ? "#e8e0d4" : "#716b63", fontWeight: hasEvent ? 500 : 300 }}
               >{m}</button>
             );
           })}
@@ -247,13 +247,13 @@ function App() {
                 }}>
                   <div style={{
                     fontFamily: "'DM Sans', sans-serif", fontSize: 10, textTransform: "uppercase",
-                    letterSpacing: 2, color: isHovered ? cfg.color : "#555",
+                    letterSpacing: 2, color: isHovered ? cfg.color : "#837d75",
                     transition: "color 0.2s", fontWeight: 500,
                   }}>{months[event.month - 1]}</div>
                   {event.day && (
                     <div style={{
                       fontFamily: "'Playfair Display', serif", fontSize: 22,
-                      color: isHovered ? cfg.color : "#3a3a4a",
+                      color: isHovered ? cfg.color : "#6e6880",
                       transition: "color 0.2s", lineHeight: 1.1, marginTop: 2,
                     }}>{event.day}</div>
                   )}
@@ -279,7 +279,7 @@ function App() {
                     background: isHovered ? "#13131e" : "transparent" }}
                 >
                   {/* Mobile: show month */}
-                  <div style={{ display: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "#555", marginBottom: 2 }}
+                  <div style={{ display: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "#837d75", marginBottom: 2 }}
                     className="mobile-month">
                     {months[event.month - 1]}{event.day ? ` ${event.day}` : ""}
                   </div>
@@ -298,7 +298,7 @@ function App() {
                   {isHovered && (
                     <div style={{
                       fontFamily: "'DM Sans', sans-serif", fontSize: 13,
-                      color: "#888", lineHeight: 1.6, fontWeight: 300,
+                      color: "#b5aea5", lineHeight: 1.6, fontWeight: 300,
                     }}>{event.detail}</div>
                   )}
                 </div>
@@ -318,20 +318,20 @@ function App() {
           border: "1px solid #1e1e2e",
           fontFamily: "'DM Sans', sans-serif",
           fontSize: 13,
-          color: "#666",
+          color: "#958f86",
           lineHeight: 1.8,
         }}>
           <div style={{ color: "#e85d04", fontWeight: 500, marginBottom: 6 }}>ⓘ Notes importantes</div>
           <ul style={{ paddingLeft: 16, display: "flex", flexDirection: "column", gap: 4 }}>
-            <li>Pas d'acomptes IR trimestriels — <strong style={{ color: "#aaa" }}>déclaration classique</strong> au printemps, solde prélevé en septembre.</li>
-            <li>Les acomptes TVA ne sont <strong style={{ color: "#aaa" }}>pas obligatoires</strong> s'ils sont inférieurs à 1 000 €.</li>
-            <li>Département 34 (Hérault) = <strong style={{ color: "#aaa" }}>Zone 2</strong> pour la date limite de déclaration IR.</li>
-            <li>La CFE est <strong style={{ color: "#aaa" }}>exonérée la 1ʳᵉ année civile</strong> d'activité. Un acompte de 50% est dû le 15 juin si la CFE N-1 était &gt; 3 000 €.</li>
-            <li>Les dates de déclaration IR sont <strong style={{ color: "#aaa" }}>indicatives</strong> et varient chaque année — vérifiez sur impots.gouv.fr.</li>
+            <li>Pas d'acomptes IR trimestriels — <strong style={{ color: "#c8c0b6" }}>déclaration classique</strong> au printemps, solde prélevé en septembre.</li>
+            <li>Les acomptes TVA ne sont <strong style={{ color: "#c8c0b6" }}>pas obligatoires</strong> s'ils sont inférieurs à 1 000 €.</li>
+            <li>Département 34 (Hérault) = <strong style={{ color: "#c8c0b6" }}>Zone 2</strong> pour la date limite de déclaration IR.</li>
+            <li>La CFE est <strong style={{ color: "#c8c0b6" }}>exonérée la 1ʳᵉ année civile</strong> d'activité. Un acompte de 50% est dû le 15 juin si la CFE N-1 était &gt; 3 000 €.</li>
+            <li>Les dates de déclaration IR sont <strong style={{ color: "#c8c0b6" }}>indicatives</strong> et varient chaque année — vérifiez sur impots.gouv.fr.</li>
           </ul>
         </div>
 
-        <div style={{ textAlign: "center", marginTop: 32, fontSize: 12, color: "#333", fontFamily: "'DM Sans', sans-serif" }}>
+        <div style={{ textAlign: "center", marginTop: 32, fontSize: 12, color: "#716b63", fontFamily: "'DM Sans', sans-serif" }}>
           Passez la souris sur un événement pour voir le détail
         </div>
       </div>
