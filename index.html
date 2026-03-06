@@ -51,9 +51,12 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { useState } = React;
+const { useState, useMemo } = React;
 
 const months = ["Jan","Fév","Mar","Avr","Mai","Juin","Juil","Août","Sep","Oct","Nov","Déc"];
+const today = new Date();
+const todayMonth = today.getMonth() + 1;
+const todayDay = today.getDate();
 
 const events = [
   {
@@ -114,6 +117,18 @@ function App() {
   const filteredEvents = selectedMonth !== null
     ? events.filter(e => e.month === selectedMonth)
     : events;
+
+  const todayIndex = useMemo(() => {
+    // Find the index in filteredEvents where today falls before
+    for (let i = 0; i < filteredEvents.length; i++) {
+      const e = filteredEvents[i];
+      const eDay = e.day || 1;
+      if (e.month > todayMonth || (e.month === todayMonth && eDay > todayDay)) {
+        return i;
+      }
+    }
+    return filteredEvents.length; // all events are in the past
+  }, [filteredEvents]);
 
   return (
     <div style={{ minHeight: "100vh", padding: "48px 24px" }}>
@@ -177,13 +192,52 @@ function App() {
           {filteredEvents.map((event, idx) => {
             const cfg = typeConfig[event.type];
             const isHovered = hoveredEvent === idx;
+            const isPast = idx < todayIndex;
+            const todayMarker = idx === todayIndex && selectedMonth === null ? (
+              <div key="today" style={{
+                display: "flex", alignItems: "center", marginBottom: 22, position: "relative",
+              }}>
+                <div className="timeline-month" style={{
+                  width: 64, flexShrink: 0, textAlign: "right", paddingRight: 16,
+                }}>
+                  <div style={{
+                    fontFamily: "'DM Sans', sans-serif", fontSize: 10, textTransform: "uppercase",
+                    letterSpacing: 2, color: "#e85d04", fontWeight: 500,
+                  }}>{months[todayMonth - 1]}</div>
+                  <div style={{
+                    fontFamily: "'Playfair Display', serif", fontSize: 22,
+                    color: "#e85d04", lineHeight: 1.1, marginTop: 2,
+                  }}>{todayDay}</div>
+                </div>
+                <div style={{
+                  width: 16, flexShrink: 0, display: "flex", justifyContent: "center", zIndex: 1,
+                }}>
+                  <div style={{
+                    width: 10, height: 10, borderRadius: "50%", background: "#e85d04",
+                    boxShadow: "0 0 12px rgba(232,93,4,0.6)",
+                  }} />
+                </div>
+                <div style={{
+                  flex: 1, marginLeft: 16, display: "flex", alignItems: "center", gap: 10,
+                }}>
+                  <div style={{
+                    height: 1, flex: 1, background: "linear-gradient(to right, #e85d04, transparent)",
+                  }} />
+                  <span style={{
+                    fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#e85d04",
+                    fontWeight: 500, letterSpacing: 1, textTransform: "uppercase", whiteSpace: "nowrap",
+                  }}>← Aujourd'hui</span>
+                </div>
+              </div>
+            ) : null;
             return (
+              <React.Fragment key={idx}>
+                {todayMarker}
               <div
-                key={idx}
                 className="event-card"
                 onMouseEnter={() => setHoveredEvent(idx)}
                 onMouseLeave={() => setHoveredEvent(null)}
-                style={{ display: "flex", alignItems: "flex-start", marginBottom: 22 }}
+                style={{ display: "flex", alignItems: "flex-start", marginBottom: 22, opacity: isPast ? 0.4 : 1 }}
               >
                 {/* Month + day */}
                 <div className="timeline-month" style={{
@@ -247,8 +301,47 @@ function App() {
                   )}
                 </div>
               </div>
+              </React.Fragment>
             );
           })}
+          {/* Today marker at the end if all events are past */}
+          {todayIndex === filteredEvents.length && selectedMonth === null && (
+            <div style={{
+              display: "flex", alignItems: "center", marginBottom: 22, position: "relative",
+            }}>
+              <div className="timeline-month" style={{
+                width: 64, flexShrink: 0, textAlign: "right", paddingRight: 16,
+              }}>
+                <div style={{
+                  fontFamily: "'DM Sans', sans-serif", fontSize: 10, textTransform: "uppercase",
+                  letterSpacing: 2, color: "#e85d04", fontWeight: 500,
+                }}>{months[todayMonth - 1]}</div>
+                <div style={{
+                  fontFamily: "'Playfair Display', serif", fontSize: 22,
+                  color: "#e85d04", lineHeight: 1.1, marginTop: 2,
+                }}>{todayDay}</div>
+              </div>
+              <div style={{
+                width: 16, flexShrink: 0, display: "flex", justifyContent: "center", zIndex: 1,
+              }}>
+                <div style={{
+                  width: 10, height: 10, borderRadius: "50%", background: "#e85d04",
+                  boxShadow: "0 0 12px rgba(232,93,4,0.6)",
+                }} />
+              </div>
+              <div style={{
+                flex: 1, marginLeft: 16, display: "flex", alignItems: "center", gap: 10,
+              }}>
+                <div style={{
+                  height: 1, flex: 1, background: "linear-gradient(to right, #e85d04, transparent)",
+                }} />
+                <span style={{
+                  fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#e85d04",
+                  fontWeight: 500, letterSpacing: 1, textTransform: "uppercase", whiteSpace: "nowrap",
+                }}>← Aujourd'hui</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
