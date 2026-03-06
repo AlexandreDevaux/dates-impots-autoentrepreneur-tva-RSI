@@ -87,6 +87,12 @@ const events = [
     detail: "L'administration prélève automatiquement le solde de l'impôt sur le revenu suite à la déclaration de printemps (ou rembourse le trop-versé)"
   },
   {
+    month: 12, day: 15,
+    label: "CFE — Solde",
+    type: "cfe",
+    detail: "Date limite de paiement de la Cotisation Foncière des Entreprises. Prélèvement automatique si vous avez opté pour la mensualisation ou le prélèvement à l'échéance. Exonération la 1ʳᵉ année civile d'activité."
+  },
+  {
     month: 12, day: 19,
     label: "2ème acompte TVA — 40%",
     type: "tva",
@@ -98,6 +104,7 @@ const typeConfig = {
   tva:  { color: "#e85d04", bg: "rgba(232,93,4,0.12)",   label: "TVA" },
   ir:   { color: "#3b9edd", bg: "rgba(59,158,221,0.12)", label: "Impôt sur le revenu" },
   decl: { color: "#9b72d0", bg: "rgba(155,114,208,0.12)",label: "Déclaration" },
+  cfe:  { color: "#2ecc71", bg: "rgba(46,204,113,0.12)", label: "CFE" },
 };
 
 function App() {
@@ -127,7 +134,7 @@ function App() {
           Calendrier Fiscal
         </h1>
         <p style={{ color: "#666", fontSize: 15, marginBottom: 36, fontFamily: "'DM Sans', sans-serif", fontWeight: 300 }}>
-          TVA régime simplifié (CA12) · IR classique · Dép. 34 — Zone 2
+          TVA régime simplifié (CA12) · IR classique · CFE · Dép. 34 — Zone 2
         </p>
 
         {/* Legend */}
@@ -261,6 +268,7 @@ function App() {
             <li>Pas d'acomptes IR trimestriels — <strong style={{ color: "#aaa" }}>déclaration classique</strong> au printemps, solde prélevé en septembre.</li>
             <li>Les acomptes TVA ne sont <strong style={{ color: "#aaa" }}>pas obligatoires</strong> s'ils sont inférieurs à 1 000 €.</li>
             <li>Département 34 (Hérault) = <strong style={{ color: "#aaa" }}>Zone 2</strong> pour la date limite de déclaration IR.</li>
+            <li>La CFE est <strong style={{ color: "#aaa" }}>exonérée la 1ʳᵉ année civile</strong> d'activité. Un acompte de 50% est dû le 15 juin si la CFE N-1 était &gt; 3 000 €.</li>
             <li>Les dates de déclaration IR sont <strong style={{ color: "#aaa" }}>indicatives</strong> et varient chaque année — vérifiez sur impots.gouv.fr.</li>
           </ul>
         </div>
