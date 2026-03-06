@@ -107,6 +107,46 @@ const typeConfig = {
   cfe:  { color: "#2ecc71", bg: "rgba(46,204,113,0.12)", label: "CFE" },
 };
 
+function TodayMarker() {
+  const now = new Date();
+  const day = now.getDate();
+  const monthIdx = now.getMonth(); // 0-based
+  const monthName = months[monthIdx];
+  return (
+    <div style={{ display: "flex", alignItems: "center", marginBottom: 22, position: "relative" }}>
+      {/* Spacer for month column */}
+      <div className="timeline-month" style={{ width: 64, flexShrink: 0 }} />
+      {/* Dot on timeline */}
+      <div className="timeline-dot-col" style={{
+        width: 16, flexShrink: 0, display: "flex", justifyContent: "center", zIndex: 2
+      }}>
+        <div style={{
+          width: 14, height: 14, borderRadius: "50%",
+          background: "#e85d04",
+          border: "2px solid #0d0d14",
+          boxShadow: "0 0 16px rgba(232,93,4,0.5)",
+        }} />
+      </div>
+      {/* Label */}
+      <div style={{
+        flex: 1, marginLeft: 16, display: "flex", alignItems: "center", gap: 10,
+      }}>
+        <div style={{
+          height: 1, flex: 1, maxWidth: 120,
+          background: "linear-gradient(to right, #e85d04, transparent)",
+        }} />
+        <span style={{
+          fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 500,
+          color: "#e85d04", letterSpacing: 1, textTransform: "uppercase",
+          whiteSpace: "nowrap",
+        }}>
+          ← Aujourd'hui · {day} {monthName}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [hoveredEvent, setHoveredEvent] = useState(null);
@@ -114,6 +154,20 @@ function App() {
   const filteredEvents = selectedMonth !== null
     ? events.filter(e => e.month === selectedMonth)
     : events;
+
+  // Find where "today" falls in the sorted event list
+  const now = new Date();
+  const todayMonth = now.getMonth() + 1; // 1-based
+  const todayDay = now.getDate();
+  let todayInsertIndex = filteredEvents.length; // default: after all events
+  for (let i = 0; i < filteredEvents.length; i++) {
+    const e = filteredEvents[i];
+    const eDay = e.day || 1;
+    if (e.month > todayMonth || (e.month === todayMonth && eDay > todayDay)) {
+      todayInsertIndex = i;
+      break;
+    }
+  }
 
   return (
     <div style={{ minHeight: "100vh", padding: "48px 24px" }}>
@@ -177,9 +231,11 @@ function App() {
           {filteredEvents.map((event, idx) => {
             const cfg = typeConfig[event.type];
             const isHovered = hoveredEvent === idx;
+            const showTodayBefore = selectedMonth === null && idx === todayInsertIndex;
             return (
+              <React.Fragment key={idx}>
+                {showTodayBefore && <TodayMarker />}
               <div
-                key={idx}
                 className="event-card"
                 onMouseEnter={() => setHoveredEvent(idx)}
                 onMouseLeave={() => setHoveredEvent(null)}
@@ -247,8 +303,10 @@ function App() {
                   )}
                 </div>
               </div>
+              </React.Fragment>
             );
           })}
+          {selectedMonth === null && todayInsertIndex === filteredEvents.length && <TodayMarker />}
         </div>
 
         {/* Footer */}
