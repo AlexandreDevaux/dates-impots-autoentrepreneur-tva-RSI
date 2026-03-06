@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calendrier Fiscal — Auto-entrepreneur</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0d0d14;
+      color: #e8e0d4;
+      font-family: 'Georgia', serif;
+    }
+    .month-pill {
+      background: #1a1a26;
+      color: #aaa;
+      border: none;
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .month-pill:hover { background: #2a2a3a; transform: translateY(-1px); }
+    .month-pill.active { background: #e85d04 !important; color: #fff !important; }
+    .event-card { transition: all 0.2s ease; }
+    .event-card:hover { transform: translateX(4px); }
+    .event-content {
+      flex: 1;
+      margin-left: 16px;
+      border-radius: 10px;
+      padding: 2px 16px;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+    }
+    .event-content.hovered {
+      padding: 12px 16px;
+      border-color: rgba(255,255,255,0.08);
+    }
+    @media (max-width: 600px) {
+      .timeline-month { display: none; }
+      .timeline-dot-col { margin-left: 8px; }
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+const months = ["Jan","Fév","Mar","Avr","Mai","Juin","Juil","Août","Sep","Oct","Nov","Déc"];
+
+const events = [
+  {
+    month: 2, day: 15,
+    label: "Acompte IR — Trimestriel",
+    type: "ir",
+    detail: "1er acompte trimestriel de prélèvement à la source (si option trimestrielle)"
+  },
+  {
+    month: 4, day: null,
+    label: "Ouverture déclaration revenus",
+    type: "decl",
+    detail: "Ouverture du service de déclaration en ligne des revenus N-1 sur impots.gouv.fr"
+  },
+  {
+    month: 5, day: 2,
+    label: "CA12 — Solde TVA",
+    type: "tva",
+    detail: "Dépôt de la déclaration annuelle CA12 + paiement du solde de TVA (régularisation). Date exacte : 2ème jour ouvré suivant le 1er mai."
+  },
+  {
+    month: 5, day: 15,
+    label: "Acompte IR — Trimestriel",
+    type: "ir",
+    detail: "2ème acompte trimestriel de prélèvement à la source"
+  },
+  {
+    month: 5, day: 22,
+    label: "Déclaration IR — Zone 1",
+    type: "decl",
+    detail: "Date limite déclaration en ligne — Départements 01 à 19 (dates indicatives, vérifiez chaque année)"
+  },
+  {
+    month: 5, day: 29,
+    label: "Déclaration IR — Zone 2",
+    type: "decl",
+    detail: "Date limite déclaration en ligne — Départements 20 à 54 (dates indicatives, vérifiez chaque année)"
+  },
+  {
+    month: 6, day: 5,
+    label: "Déclaration IR — Zone 3",
+    type: "decl",
+    detail: "Date limite déclaration en ligne — Départements 55 à 976 (dates indicatives, vérifiez chaque année)"
+  },
+  {
+    month: 7, day: 19,
+    label: "1er acompte TVA — 55%",
+    type: "tva",
+    detail: "Acompte semestriel de TVA = 55% de la TVA due au titre de l'année précédente. Non obligatoire si < 1 000 €."
+  },
+  {
+    month: 8, day: 15,
+    label: "Acompte IR — Trimestriel",
+    type: "ir",
+    detail: "3ème acompte trimestriel de prélèvement à la source"
+  },
+  {
+    month: 9, day: null,
+    label: "Solde IR prélevé",
+    type: "ir",
+    detail: "L'administration prélève automatiquement le solde de l'impôt sur le revenu suite à la déclaration de printemps (ou rembourse le trop-versé)"
+  },
+  {
+    month: 11, day: 15,
+    label: "Acompte IR — Trimestriel",
+    type: "ir",
+    detail: "4ème et dernier acompte trimestriel de prélèvement à la source de l'année"
+  },
+  {
+    month: 12, day: 19,
+    label: "2ème acompte TVA — 40%",
+    type: "tva",
+    detail: "Acompte semestriel de TVA = 40% de la TVA due au titre de l'année précédente. Non obligatoire si < 1 000 €."
+  },
+];
+
+const typeConfig = {
+  tva:  { color: "#e85d04", bg: "rgba(232,93,4,0.12)",   label: "TVA" },
+  ir:   { color: "#3b9edd", bg: "rgba(59,158,221,0.12)", label: "Impôt sur le revenu" },
+  decl: { color: "#9b72d0", bg: "rgba(155,114,208,0.12)",label: "Déclaration" },
+};
+
+function App() {
+  const [selectedMonth, setSelectedMonth] = useState(null);
+  const [hoveredEvent, setHoveredEvent] = useState(null);
+
+  const filteredEvents = selectedMonth !== null
+    ? events.filter(e => e.month === selectedMonth)
+    : events;
+
+  return (
+    <div style={{ minHeight: "100vh", padding: "48px 24px" }}>
+      <div style={{ maxWidth: 760, margin: "0 auto" }}>
+
+        {/* Header */}
+        <div style={{ marginBottom: 6, fontSize: 11, letterSpacing: 4, color: "#e85d04", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif" }}>
+          Auto-entrepreneur · France
+        </div>
+        <h1 style={{
+          fontFamily: "'Playfair Display', serif",
+          fontSize: "clamp(30px, 6vw, 52px)",
+          fontWeight: 700,
+          lineHeight: 1.1,
+          color: "#f5f0e8",
+          marginBottom: 8,
+        }}>
+          Calendrier Fiscal
+        </h1>
+        <p style={{ color: "#666", fontSize: 15, marginBottom: 36, fontFamily: "'DM Sans', sans-serif", fontWeight: 300 }}>
+          TVA régime simplifié (CA12) · Prélèvement à la source
+        </p>
+
+        {/* Legend */}
+        <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginBottom: 28 }}>
+          {Object.entries(typeConfig).map(([key, cfg]) => (
+            <div key={key} style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#888" }}>
+              <div style={{ width: 10, height: 10, borderRadius: 2, background: cfg.color }} />
+              {cfg.label}
+            </div>
+          ))}
+        </div>
+
+        {/* Month filter */}
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 40 }}>
+          <button
+            className={`month-pill${selectedMonth === null ? " active" : ""}`}
+            onClick={() => setSelectedMonth(null)}
+          >Tous</button>
+          {months.map((m, i) => {
+            const hasEvent = events.some(e => e.month === i + 1);
+            return (
+              <button
+                key={i}
+                className={`month-pill${selectedMonth === i + 1 ? " active" : ""}`}
+                onClick={() => setSelectedMonth(selectedMonth === i + 1 ? null : i + 1)}
+                style={{ color: hasEvent ? "#e8e0d4" : "#444", fontWeight: hasEvent ? 500 : 300 }}
+              >{m}</button>
+            );
+          })}
+        </div>
+
+        {/* Timeline */}
+        <div style={{ position: "relative" }}>
+          {/* vertical bar */}
+          <div style={{
+            position: "absolute", left: 72, top: 0, bottom: 0, width: 1,
+            background: "linear-gradient(to bottom, transparent, #2a2a2a 8%, #2a2a2a 92%, transparent)"
+          }} />
+
+          {filteredEvents.map((event, idx) => {
+            const cfg = typeConfig[event.type];
+            const isHovered = hoveredEvent === idx;
+            return (
+              <div
+                key={idx}
+                className="event-card"
+                onMouseEnter={() => setHoveredEvent(idx)}
+                onMouseLeave={() => setHoveredEvent(null)}
+                style={{ display: "flex", alignItems: "flex-start", marginBottom: 22 }}
+              >
+                {/* Month + day */}
+                <div className="timeline-month" style={{
+                  width: 64, flexShrink: 0, textAlign: "right", paddingRight: 16, paddingTop: 2
+                }}>
+                  <div style={{
+                    fontFamily: "'DM Sans', sans-serif", fontSize: 10, textTransform: "uppercase",
+                    letterSpacing: 2, color: isHovered ? cfg.color : "#555",
+                    transition: "color 0.2s", fontWeight: 500,
+                  }}>{months[event.month - 1]}</div>
+                  {event.day && (
+                    <div style={{
+                      fontFamily: "'Playfair Display', serif", fontSize: 22,
+                      color: isHovered ? cfg.color : "#3a3a4a",
+                      transition: "color 0.2s", lineHeight: 1.1, marginTop: 2,
+                    }}>{event.day}</div>
+                  )}
+                </div>
+
+                {/* Dot */}
+                <div className="timeline-dot-col" style={{
+                  width: 16, flexShrink: 0, display: "flex", justifyContent: "center", paddingTop: 6, zIndex: 1
+                }}>
+                  <div style={{
+                    width: isHovered ? 12 : 8, height: isHovered ? 12 : 8,
+                    borderRadius: "50%", background: cfg.color,
+                    transition: "all 0.2s",
+                    marginTop: isHovered ? -2 : 0,
+                    boxShadow: isHovered ? `0 0 14px ${cfg.color}99` : "none",
+                  }} />
+                </div>
+
+                {/* Content */}
+                <div
+                  className={`event-content${isHovered ? " hovered" : ""}`}
+                  style={{ borderColor: isHovered ? `${cfg.color}22` : "transparent",
+                    background: isHovered ? "#13131e" : "transparent" }}
+                >
+                  {/* Mobile: show month */}
+                  <div style={{ display: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "#555", marginBottom: 2 }}
+                    className="mobile-month">
+                    {months[event.month - 1]}{event.day ? ` ${event.day}` : ""}
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <span style={{
+                      background: cfg.bg, color: cfg.color, fontSize: 10,
+                      fontFamily: "'DM Sans', sans-serif", letterSpacing: 1.5,
+                      textTransform: "uppercase", padding: "2px 9px", borderRadius: 20, fontWeight: 500,
+                    }}>{cfg.label}</span>
+                  </div>
+                  <div style={{
+                    fontFamily: "'Playfair Display', serif", fontSize: 16,
+                    color: "#f0ebe2", marginBottom: isHovered ? 8 : 0,
+                  }}>{event.label}</div>
+                  {isHovered && (
+                    <div style={{
+                      fontFamily: "'DM Sans', sans-serif", fontSize: 13,
+                      color: "#888", lineHeight: 1.6, fontWeight: 300,
+                    }}>{event.detail}</div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Footer */}
+        <div style={{
+          marginTop: 44,
+          padding: "20px 24px",
+          background: "#11111a",
+          borderRadius: 12,
+          border: "1px solid #1e1e2e",
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: 13,
+          color: "#666",
+          lineHeight: 1.8,
+        }}>
+          <div style={{ color: "#e85d04", fontWeight: 500, marginBottom: 6 }}>ⓘ Notes importantes</div>
+          <ul style={{ paddingLeft: 16, display: "flex", flexDirection: "column", gap: 4 }}>
+            <li>Les <strong style={{ color: "#aaa" }}>acomptes IR trimestriels</strong> (15 fév, mai, août, nov) s'appliquent si vous avez choisi l'option trimestrielle ; sinon ils sont <strong style={{ color: "#aaa" }}>mensuels le 15 de chaque mois</strong>.</li>
+            <li>Les acomptes TVA ne sont <strong style={{ color: "#aaa" }}>pas obligatoires</strong> s'ils sont inférieurs à 1 000 €.</li>
+            <li>Vous pouvez <strong style={{ color: "#aaa" }}>moduler ou suspendre</strong> vos acomptes IR sur <em>impots.gouv.fr</em> si vos revenus ont changé.</li>
+            <li>Les dates de déclaration IR sont <strong style={{ color: "#aaa" }}>indicatives</strong> et varient chaque année — vérifiez sur impots.gouv.fr.</li>
+          </ul>
+        </div>
+
+        <div style={{ textAlign: "center", marginTop: 32, fontSize: 12, color: "#333", fontFamily: "'DM Sans', sans-serif" }}>
+          Passez la souris sur un événement pour voir le détail
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
