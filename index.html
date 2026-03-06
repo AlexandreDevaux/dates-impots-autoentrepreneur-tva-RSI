@@ -57,12 +57,6 @@ const months = ["Jan","Fév","Mar","Avr","Mai","Juin","Juil","Août","Sep","Oct"
 
 const events = [
   {
-    month: 2, day: 15,
-    label: "Acompte IR — Trimestriel",
-    type: "ir",
-    detail: "1er acompte trimestriel de prélèvement à la source (si option trimestrielle)"
-  },
-  {
     month: 4, day: null,
     label: "Ouverture déclaration revenus",
     type: "decl",
@@ -75,28 +69,10 @@ const events = [
     detail: "Dépôt de la déclaration annuelle CA12 + paiement du solde de TVA (régularisation). Date exacte : 2ème jour ouvré suivant le 1er mai."
   },
   {
-    month: 5, day: 15,
-    label: "Acompte IR — Trimestriel",
-    type: "ir",
-    detail: "2ème acompte trimestriel de prélèvement à la source"
-  },
-  {
-    month: 5, day: 22,
-    label: "Déclaration IR — Zone 1",
-    type: "decl",
-    detail: "Date limite déclaration en ligne — Départements 01 à 19 (dates indicatives, vérifiez chaque année)"
-  },
-  {
     month: 5, day: 29,
-    label: "Déclaration IR — Zone 2",
+    label: "Déclaration IR — Zone 2 (dép. 34)",
     type: "decl",
-    detail: "Date limite déclaration en ligne — Départements 20 à 54 (dates indicatives, vérifiez chaque année)"
-  },
-  {
-    month: 6, day: 5,
-    label: "Déclaration IR — Zone 3",
-    type: "decl",
-    detail: "Date limite déclaration en ligne — Départements 55 à 976 (dates indicatives, vérifiez chaque année)"
+    detail: "Date limite déclaration en ligne — Départements 20 à 54 dont le 34 Hérault (date indicative, vérifiez chaque année sur impots.gouv.fr)"
   },
   {
     month: 7, day: 19,
@@ -105,22 +81,10 @@ const events = [
     detail: "Acompte semestriel de TVA = 55% de la TVA due au titre de l'année précédente. Non obligatoire si < 1 000 €."
   },
   {
-    month: 8, day: 15,
-    label: "Acompte IR — Trimestriel",
-    type: "ir",
-    detail: "3ème acompte trimestriel de prélèvement à la source"
-  },
-  {
     month: 9, day: null,
     label: "Solde IR prélevé",
     type: "ir",
     detail: "L'administration prélève automatiquement le solde de l'impôt sur le revenu suite à la déclaration de printemps (ou rembourse le trop-versé)"
-  },
-  {
-    month: 11, day: 15,
-    label: "Acompte IR — Trimestriel",
-    type: "ir",
-    detail: "4ème et dernier acompte trimestriel de prélèvement à la source de l'année"
   },
   {
     month: 12, day: 19,
@@ -163,7 +127,7 @@ function App() {
           Calendrier Fiscal
         </h1>
         <p style={{ color: "#666", fontSize: 15, marginBottom: 36, fontFamily: "'DM Sans', sans-serif", fontWeight: 300 }}>
-          TVA régime simplifié (CA12) · Prélèvement à la source
+          TVA régime simplifié (CA12) · IR classique · Dép. 34 — Zone 2
         </p>
 
         {/* Legend */}
@@ -294,9 +258,9 @@ function App() {
         }}>
           <div style={{ color: "#e85d04", fontWeight: 500, marginBottom: 6 }}>ⓘ Notes importantes</div>
           <ul style={{ paddingLeft: 16, display: "flex", flexDirection: "column", gap: 4 }}>
-            <li>Les <strong style={{ color: "#aaa" }}>acomptes IR trimestriels</strong> (15 fév, mai, août, nov) s'appliquent si vous avez choisi l'option trimestrielle ; sinon ils sont <strong style={{ color: "#aaa" }}>mensuels le 15 de chaque mois</strong>.</li>
+            <li>Pas d'acomptes IR trimestriels — <strong style={{ color: "#aaa" }}>déclaration classique</strong> au printemps, solde prélevé en septembre.</li>
             <li>Les acomptes TVA ne sont <strong style={{ color: "#aaa" }}>pas obligatoires</strong> s'ils sont inférieurs à 1 000 €.</li>
-            <li>Vous pouvez <strong style={{ color: "#aaa" }}>moduler ou suspendre</strong> vos acomptes IR sur <em>impots.gouv.fr</em> si vos revenus ont changé.</li>
+            <li>Département 34 (Hérault) = <strong style={{ color: "#aaa" }}>Zone 2</strong> pour la date limite de déclaration IR.</li>
             <li>Les dates de déclaration IR sont <strong style={{ color: "#aaa" }}>indicatives</strong> et varient chaque année — vérifiez sur impots.gouv.fr.</li>
           </ul>
         </div>
