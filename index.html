@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="description" content="Calendrier fiscal pour auto-entrepreneurs en France : dates TVA, impôt sur le revenu, CFE et déclarations." />
   <title>Calendrier Fiscal — Auto-entrepreneur</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -10,49 +12,86 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { color-scheme: dark; }
     body {
       background: #0d0d14;
       color: #e8e0d4;
-      font-family: 'Georgia', serif;
+      font-family: 'DM Sans', 'Georgia', serif;
     }
     .month-pill {
       background: #1a1a26;
-      color: #c0b8ae;
       border: none;
       border-radius: 20px;
       padding: 6px 14px;
       font-size: 13px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: background 0.2s, transform 0.2s, color 0.2s;
       font-family: 'DM Sans', sans-serif;
     }
+    .month-pill.has-event { color: #e8e0d4; font-weight: 500; }
+    .month-pill.no-event { color: #8a847b; font-weight: 300; }
     .month-pill:hover { background: #2a2a3a; transform: translateY(-1px); }
-    .month-pill.active { background: #e85d04 !important; color: #fff !important; }
-    .event-card { transition: all 0.2s ease; }
+    .month-pill:focus-visible { outline: 2px solid #e85d04; outline-offset: 2px; }
+    .month-pill.active { background: #e85d04; color: #fff; font-weight: 500; }
+    .event-card {
+      transition: transform 0.2s ease;
+      cursor: pointer;
+    }
     .event-card:hover { transform: translateX(4px); }
+    .event-card:focus-visible { outline: 2px solid #e85d04; outline-offset: 2px; border-radius: 10px; }
     .event-content {
       flex: 1;
       margin-left: 16px;
       border-radius: 10px;
-      padding: 2px 16px;
+      padding: 10px 16px;
       border: 1px solid transparent;
-      transition: all 0.2s;
+      transition: border-color 0.2s, background 0.2s;
     }
-    .event-content.hovered {
-      padding: 12px 16px;
+    .event-content.expanded {
       border-color: rgba(255,255,255,0.08);
+    }
+    .event-detail {
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: max-height 0.3s ease, opacity 0.2s ease, margin 0.2s ease;
+      margin-top: 0;
+    }
+    .event-detail.visible {
+      max-height: 200px;
+      opacity: 1;
+      margin-top: 8px;
+    }
+    .timeline-bar {
+      position: absolute;
+      left: 72px;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: linear-gradient(to bottom, transparent, #2a2a2a 8%, #2a2a2a 92%, transparent);
     }
     @media (max-width: 600px) {
       .timeline-month { display: none; }
       .timeline-dot-col { margin-left: 8px; }
       .mobile-month { display: block !important; }
+      .timeline-bar { left: 16px; }
+      .month-pill { padding: 8px 16px; min-height: 44px; display: inline-flex; align-items: center; }
+      .month-filter-row { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+      .month-filter-row::-webkit-scrollbar { display: none; }
+      .outer-padding { padding: 24px 16px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
     }
   </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { useState } = React;
+const { useState, useRef, useEffect } = React;
 
 const months = ["Jan","Fév","Mar","Avr","Mai","Juin","Juil","Août","Sep","Oct","Nov","Déc"];
 
@@ -102,22 +141,21 @@ const events = [
 ];
 
 const typeConfig = {
-  tva:  { color: "#e85d04", bg: "rgba(232,93,4,0.12)",   label: "TVA" },
-  ir:   { color: "#3b9edd", bg: "rgba(59,158,221,0.12)", label: "Impôt sur le revenu" },
-  decl: { color: "#9b72d0", bg: "rgba(155,114,208,0.12)",label: "Déclaration" },
-  cfe:  { color: "#2ecc71", bg: "rgba(46,204,113,0.12)", label: "CFE" },
+  tva:  { color: "#e85d04", bg: "rgba(232,93,4,0.16)",   label: "TVA" },
+  ir:   { color: "#3b9edd", bg: "rgba(59,158,221,0.16)", label: "Impôt sur le revenu" },
+  decl: { color: "#9b72d0", bg: "rgba(155,114,208,0.16)",label: "Déclaration" },
+  cfe:  { color: "#2ecc71", bg: "rgba(46,204,113,0.16)", label: "CFE" },
 };
 
-function TodayMarker() {
+function TodayMarker({ todayRef }) {
   const now = new Date();
   const day = now.getDate();
-  const monthIdx = now.getMonth(); // 0-based
+  const monthIdx = now.getMonth();
   const monthName = months[monthIdx];
   return (
-    <div style={{ display: "flex", alignItems: "center", marginBottom: 22, position: "relative" }}>
-      {/* Spacer for month column */}
+    <div ref={todayRef} role="status" aria-label={`Aujourd'hui, ${day} ${monthName}`}
+      style={{ display: "flex", alignItems: "center", marginBottom: 22, position: "relative" }}>
       <div className="timeline-month" style={{ width: 64, flexShrink: 0 }} />
-      {/* Dot on timeline */}
       <div className="timeline-dot-col" style={{
         width: 16, flexShrink: 0, display: "flex", justifyContent: "center", zIndex: 2
       }}>
@@ -125,10 +163,9 @@ function TodayMarker() {
           width: 14, height: 14, borderRadius: "50%",
           background: "#f4d35e",
           border: "2px solid #0d0d14",
-          boxShadow: "0 0 16px rgba(244,211,94,0.5)",
+          boxShadow: "0 0 10px rgba(244,211,94,0.45), 0 0 24px rgba(244,211,94,0.15)",
         }} />
       </div>
-      {/* Label */}
       <div style={{
         flex: 1, marginLeft: 16, display: "flex", alignItems: "center", gap: 10,
       }}>
@@ -150,7 +187,8 @@ function TodayMarker() {
 
 function App() {
   const [selectedMonth, setSelectedMonth] = useState(null);
-  const [hoveredEvent, setHoveredEvent] = useState(null);
+  const [expandedEvent, setExpandedEvent] = useState(null);
+  const todayRef = useRef(null);
 
   const filteredEvents = selectedMonth !== null
     ? events.filter(e => e.month === selectedMonth)
@@ -158,9 +196,9 @@ function App() {
 
   // Find where "today" falls in the sorted event list
   const now = new Date();
-  const todayMonth = now.getMonth() + 1; // 1-based
+  const todayMonth = now.getMonth() + 1;
   const todayDay = now.getDate();
-  let todayInsertIndex = filteredEvents.length; // default: after all events
+  let todayInsertIndex = filteredEvents.length;
   for (let i = 0; i < filteredEvents.length; i++) {
     const e = filteredEvents[i];
     const eDay = e.day || 1;
@@ -170,9 +208,31 @@ function App() {
     }
   }
 
+  // Auto-scroll to today marker on mount
+  useEffect(() => {
+    if (todayRef.current) {
+      todayRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, []);
+
+  const toggleEvent = (idx) => {
+    setExpandedEvent(expandedEvent === idx ? null : idx);
+  };
+
+  const handleKeyDown = (e, idx) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      toggleEvent(idx);
+    }
+  };
+
+  // Show today marker in filtered view too
+  const showTodayInView = selectedMonth === null ||
+    selectedMonth === todayMonth;
+
   return (
-    <div style={{ minHeight: "100vh", padding: "48px 24px" }}>
-      <div style={{ maxWidth: 760, margin: "0 auto" }}>
+    <div className="outer-padding" style={{ minHeight: "100vh", padding: "48px 24px" }}>
+      <main style={{ maxWidth: 760, margin: "0 auto" }} aria-label="Calendrier fiscal">
 
         {/* Header */}
         <div style={{ marginBottom: 6, fontSize: 11, letterSpacing: 4, color: "#e85d04", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif" }}>
@@ -188,12 +248,12 @@ function App() {
         }}>
           Calendrier Fiscal
         </h1>
-        <p style={{ color: "#958f86", fontSize: 15, marginBottom: 36, fontFamily: "'DM Sans', sans-serif", fontWeight: 300 }}>
+        <p style={{ color: "#958f86", fontSize: 15, marginBottom: 32, fontFamily: "'DM Sans', sans-serif", fontWeight: 300, lineHeight: 1.5 }}>
           TVA régime simplifié (CA12) · IR classique · CFE · Dép. 34 — Zone 2
         </p>
 
         {/* Legend */}
-        <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginBottom: 28 }}>
+        <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginBottom: 20 }}>
           {Object.entries(typeConfig).map(([key, cfg]) => (
             <div key={key} style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#a8a29a" }}>
               <div style={{ width: 10, height: 10, borderRadius: 2, background: cfg.color }} />
@@ -203,43 +263,49 @@ function App() {
         </div>
 
         {/* Month filter */}
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 40 }}>
+        <div className="month-filter-row" role="group" aria-label="Filtrer par mois"
+          style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 44 }}>
           <button
-            className={`month-pill${selectedMonth === null ? " active" : ""}`}
+            className={`month-pill${selectedMonth === null ? " active" : " has-event"}`}
             onClick={() => setSelectedMonth(null)}
+            aria-pressed={selectedMonth === null}
           >Tous</button>
           {months.map((m, i) => {
             const hasEvent = events.some(e => e.month === i + 1);
             return (
               <button
                 key={i}
-                className={`month-pill${selectedMonth === i + 1 ? " active" : ""}`}
+                className={`month-pill${selectedMonth === i + 1 ? " active" : hasEvent ? " has-event" : " no-event"}`}
                 onClick={() => setSelectedMonth(selectedMonth === i + 1 ? null : i + 1)}
-                style={{ color: hasEvent ? "#e8e0d4" : "#716b63", fontWeight: hasEvent ? 500 : 300 }}
+                aria-pressed={selectedMonth === i + 1}
               >{m}</button>
             );
           })}
         </div>
 
         {/* Timeline */}
-        <div style={{ position: "relative" }}>
+        <div style={{ position: "relative" }} aria-label="Liste des échéances fiscales">
           {/* vertical bar */}
-          <div style={{
-            position: "absolute", left: 72, top: 0, bottom: 0, width: 1,
-            background: "linear-gradient(to bottom, transparent, #2a2a2a 8%, #2a2a2a 92%, transparent)"
-          }} />
+          {filteredEvents.length > 0 && (
+            <div className="timeline-bar" />
+          )}
 
           {filteredEvents.map((event, idx) => {
             const cfg = typeConfig[event.type];
-            const isHovered = hoveredEvent === idx;
-            const showTodayBefore = selectedMonth === null && idx === todayInsertIndex;
+            const isExpanded = expandedEvent === idx;
+            const showTodayBefore = showTodayInView && idx === todayInsertIndex;
+            const dateStr = `${event.day ? event.day + ' ' : ''}${months[event.month - 1]}`;
             return (
               <React.Fragment key={idx}>
-                {showTodayBefore && <TodayMarker />}
+                {showTodayBefore && <TodayMarker todayRef={todayRef} />}
               <div
                 className="event-card"
-                onMouseEnter={() => setHoveredEvent(idx)}
-                onMouseLeave={() => setHoveredEvent(null)}
+                tabIndex={0}
+                role="button"
+                aria-expanded={isExpanded}
+                aria-label={`${dateStr} — ${cfg.label} — ${event.label}`}
+                onClick={() => toggleEvent(idx)}
+                onKeyDown={(e) => handleKeyDown(e, idx)}
                 style={{ display: "flex", alignItems: "flex-start", marginBottom: 22 }}
               >
                 {/* Month + day */}
@@ -248,13 +314,13 @@ function App() {
                 }}>
                   <div style={{
                     fontFamily: "'DM Sans', sans-serif", fontSize: 10, textTransform: "uppercase",
-                    letterSpacing: 2, color: isHovered ? cfg.color : "#837d75",
+                    letterSpacing: 2, color: isExpanded ? cfg.color : "#9e978e",
                     transition: "color 0.2s", fontWeight: 500,
                   }}>{months[event.month - 1]}</div>
                   {event.day && (
                     <div style={{
                       fontFamily: "'Playfair Display', serif", fontSize: 22,
-                      color: isHovered ? cfg.color : "#6e6880",
+                      color: isExpanded ? cfg.color : "#8a8498",
                       transition: "color 0.2s", lineHeight: 1.1, marginTop: 2,
                     }}>{event.day}</div>
                   )}
@@ -265,22 +331,22 @@ function App() {
                   width: 16, flexShrink: 0, display: "flex", justifyContent: "center", paddingTop: 6, zIndex: 1
                 }}>
                   <div style={{
-                    width: isHovered ? 12 : 8, height: isHovered ? 12 : 8,
+                    width: isExpanded ? 12 : 8, height: isExpanded ? 12 : 8,
                     borderRadius: "50%", background: cfg.color,
                     transition: "all 0.2s",
-                    marginTop: isHovered ? -2 : 0,
-                    boxShadow: isHovered ? `0 0 14px ${cfg.color}99` : "none",
+                    marginTop: isExpanded ? -2 : 0,
+                    boxShadow: isExpanded ? `0 0 14px ${cfg.color}99` : "none",
                   }} />
                 </div>
 
                 {/* Content */}
                 <div
-                  className={`event-content${isHovered ? " hovered" : ""}`}
-                  style={{ borderColor: isHovered ? `${cfg.color}22` : "transparent",
-                    background: isHovered ? "#13131e" : "transparent" }}
+                  className={`event-content${isExpanded ? " expanded" : ""}`}
+                  style={{ borderColor: isExpanded ? `${cfg.color}22` : "transparent",
+                    background: isExpanded ? "#181825" : "transparent" }}
                 >
                   {/* Mobile: show month */}
-                  <div style={{ display: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "#837d75", marginBottom: 2 }}
+                  <div style={{ display: "none", fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "#9e978e", marginBottom: 2 }}
                     className="mobile-month">
                     {months[event.month - 1]}{event.day ? ` ${event.day}` : ""}
                   </div>
@@ -293,21 +359,40 @@ function App() {
                     }}>{cfg.label}</span>
                   </div>
                   <div style={{
-                    fontFamily: "'Playfair Display', serif", fontSize: 16,
-                    color: "#f0ebe2", marginBottom: isHovered ? 8 : 0,
-                  }}>{event.label}</div>
-                  {isHovered && (
+                    fontFamily: "'Playfair Display', serif", fontSize: 18,
+                    color: "#f0ebe2", display: "flex", alignItems: "center", gap: 8,
+                  }}>
+                    {event.label}
+                    <span style={{
+                      fontSize: 12, color: "#716b63", transition: "transform 0.2s",
+                      transform: isExpanded ? "rotate(90deg)" : "none",
+                      display: "inline-block",
+                    }}>▸</span>
+                  </div>
+                  <div className={`event-detail${isExpanded ? " visible" : ""}`}>
                     <div style={{
                       fontFamily: "'DM Sans', sans-serif", fontSize: 13,
                       color: "#b5aea5", lineHeight: 1.6, fontWeight: 300,
                     }}>{event.detail}</div>
-                  )}
+                  </div>
                 </div>
               </div>
               </React.Fragment>
             );
           })}
-          {selectedMonth === null && todayInsertIndex === filteredEvents.length && <TodayMarker />}
+          {showTodayInView && todayInsertIndex === filteredEvents.length && <TodayMarker todayRef={todayRef} />}
+
+          {/* Empty state */}
+          {filteredEvents.length === 0 && (
+            <div style={{ textAlign: "center", padding: "48px 24px", fontFamily: "'DM Sans', sans-serif" }}>
+              <div style={{ fontSize: 28, color: "#8a847b", marginBottom: 12, fontFamily: "'Playfair Display', serif" }}>
+                Aucune échéance
+              </div>
+              <div style={{ fontSize: 14, color: "#716b63" }}>
+                Pas d'échéance fiscale prévue en {months[selectedMonth - 1]}.
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -317,6 +402,7 @@ function App() {
           background: "#11111a",
           borderRadius: 12,
           border: "1px solid #1e1e2e",
+          borderLeft: "3px solid #e85d04",
           fontFamily: "'DM Sans', sans-serif",
           fontSize: 13,
           color: "#958f86",
@@ -324,18 +410,18 @@ function App() {
         }}>
           <div style={{ color: "#e85d04", fontWeight: 500, marginBottom: 6 }}>ⓘ Notes importantes</div>
           <ul style={{ paddingLeft: 16, display: "flex", flexDirection: "column", gap: 4 }}>
-            <li>Pas d'acomptes IR trimestriels — <strong style={{ color: "#c8c0b6" }}>déclaration classique</strong> au printemps, solde prélevé en septembre.</li>
-            <li>Les acomptes TVA ne sont <strong style={{ color: "#c8c0b6" }}>pas obligatoires</strong> s'ils sont inférieurs à 1 000 €.</li>
-            <li>Département 34 (Hérault) = <strong style={{ color: "#c8c0b6" }}>Zone 2</strong> pour la date limite de déclaration IR.</li>
-            <li>La CFE est <strong style={{ color: "#c8c0b6" }}>exonérée la 1ʳᵉ année civile</strong> d'activité. Un acompte de 50% est dû le 15 juin si la CFE N-1 était &gt; 3 000 €.</li>
-            <li>Les dates de déclaration IR sont <strong style={{ color: "#c8c0b6" }}>indicatives</strong> et varient chaque année — vérifiez sur impots.gouv.fr.</li>
+            <li>Pas d'acomptes IR trimestriels — <strong style={{ color: "#e0d8ce" }}>déclaration classique</strong> au printemps, solde prélevé en septembre.</li>
+            <li>Les acomptes TVA ne sont <strong style={{ color: "#e0d8ce" }}>pas obligatoires</strong> s'ils sont inférieurs à 1 000 €.</li>
+            <li>Département 34 (Hérault) = <strong style={{ color: "#e0d8ce" }}>Zone 2</strong> pour la date limite de déclaration IR.</li>
+            <li>La CFE est <strong style={{ color: "#e0d8ce" }}>exonérée la 1ʳᵉ année civile</strong> d'activité. Un acompte de 50% est dû le 15 juin si la CFE N-1 était &gt; 3 000 €.</li>
+            <li>Les dates de déclaration IR sont <strong style={{ color: "#e0d8ce" }}>indicatives</strong> et varient chaque année — vérifiez sur impots.gouv.fr.</li>
           </ul>
         </div>
 
-        <div style={{ textAlign: "center", marginTop: 32, fontSize: 12, color: "#716b63", fontFamily: "'DM Sans', sans-serif" }}>
-          Passez la souris sur un événement pour voir le détail
+        <div style={{ textAlign: "center", marginTop: 32, fontSize: 12, color: "#8a847b", fontFamily: "'DM Sans', sans-serif" }}>
+          Cliquez sur un événement pour voir le détail
         </div>
-      </div>
+      </main>
     </div>
   );
 }
